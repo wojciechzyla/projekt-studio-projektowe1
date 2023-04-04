@@ -1,0 +1,15 @@
+{
+  "nightlife": ["bar", "night_club"],
+  "accommodation": ["lodging", "rv_park", "campground"],
+  "religion": ["church", "hindu_temple", "mosque", "synagogue", "cemetery"],
+  "car_services": ["car_rental", "car_repair", "car_wash", "parking", "rv_park", "gas_station"],
+  "culture": ["art_gallery", "museum", "tourist_attraction"],
+  "food_and_drink": ["bakery", "cafe", "restaurant", "meal_delivery", "meal_takeaway", "liquor_store"],
+  "sports_and_fitness": ["gym", "park", "stadium"],
+  "wellness": ["spa", "beauty_salon"],
+  "entertainment": ["amusement_park", "aquarium", "bowling_alley", "casino", "movie_theater", "zoo"],
+  "shopping": ["book_store", "clothing_store", "jewelry_store", "liquor_store", "shoe_store", "shopping_mall"],
+  "travel_services": ["travel_agency", "atm", "bank"],
+  "expensive_transport": ["taxi_stand", "car_rental"],
+  "cheap_transport": ["bus_station", "subway_station", "light_rail_station", "transit_station"]
+}
