@@ -18,10 +18,8 @@ class PrepOption(Enum):
     LEMMA = 9
 
 
-def preprocess_document(document: str, options: List[PrepOption], stopwords_list: List[str] = None, stemmer=None):
+def preprocess_document(document: str, options: List[PrepOption]):
     stop = stopwords.words("english")
-    stemmer = PorterStemmer()
-    lemmatizer = WordNetLemmatizer()
     sentences_preprocessed = []
     if PrepOption.TOKENIZE_SENTENCE in options:
         sentences = sent_tokenize(document, "english")
@@ -35,8 +33,10 @@ def preprocess_document(document: str, options: List[PrepOption], stopwords_list
         if PrepOption.LOWERCASE in options:
             sent = " ".join([word.lower() for word in sent.split()])
         if PrepOption.LEMMA in options:
+            lemmatizer = WordNetLemmatizer()
             sent = " ".join([lemmatizer.lemmatize(word) for word in sent.split()])
         elif PrepOption.STEM in options:
+            stemmer = PorterStemmer()
             words_stemmed = []
             for word in sent.split():
                 stemmed = stemmer.stem(word)
