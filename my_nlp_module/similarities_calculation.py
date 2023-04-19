@@ -71,18 +71,21 @@ class SentenceTransformerSimilarity(SimilaritiesCalculation):
         for cat in categories:
             template_strings.append(templates[cat])
 
+        embeddings_templates = self.__model.encode(template_strings, convert_to_tensor=True)
         for sentence in document:
             sentiment = self.__sentiment_analyzer.polarity_scores(sentence)
             sentence = preprocess_document(sentence, self.__preprocessing_options)
             embedding_sentence = self.__model.encode(sentence, convert_to_tensor=True)
-            embeddings_templates = self.__model.encode(template_strings, convert_to_tensor=True)
             sim = util.cos_sim(embedding_sentence, embeddings_templates).numpy().squeeze()
             for i in range(sim.shape[0]):
                 sim[i] = sim[i] if np.abs(sim[i]) > 0.2 else 0
             norm_idx = np.where(sim != 0)[0]
             for i in norm_idx:
                 normalization[i] += 1
-            sim = sim * (1 - sentiment["neg"])
+            if sentiment["neg"] < 0.5:
+                sim = sim * (1 - sentiment["neg"])
+            else:
+                sim = sim * (-sentiment["neg"])
             document_similarity += sim
 
         for i, el in enumerate(normalization):
