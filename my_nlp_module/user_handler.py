@@ -234,13 +234,10 @@ class User:
             for tp in cat.categories_list:
                 #searching req has to be changed, because parameter cost_rate is not correctly handle by GM Api
                 search_req_url = f"https://maps.googleapis.com/maps/api/place/nearbysearch/json?location={self.lat}%2C{self.lng}&radius={self.radius}&type={tp}&key={gmaps_key}"
-                
                 payload={}
                 headers = {}
                 response = requests.request("GET", search_req_url, headers=headers, data=payload)
-                
                 json_response = response.json()
-                
                 results = json_response['results'][:3]
    
                 temp_res = []
