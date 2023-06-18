@@ -393,7 +393,7 @@ class CityDay:
         
         origin = f"origin={places[0]}"
         origin_place_id = f"origin_place_id={places_ids[0]}"
-        destination = f"destination={places[0]}"
+        destination = f"destination={places[-1]}"
         destination_place_id = f"destination_place_id={places_ids[len(places_ids) - 1]}"
         
         if(len(places) > 2):
