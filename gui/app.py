@@ -5,14 +5,16 @@ import customtkinter
 from tkinter import filedialog
 from tkcalendar import Calendar
 from datetime import datetime
-from my_nlp_module.user_handler import TravelWith
 import os
 import sys
-module_path = os.path.abspath(os.path.join('..'))
+module_path = os.path.abspath(os.path.join('.'))
+print(f"sciezka: {module_path}")
 if module_path not in sys.path:
     sys.path.append(module_path)
+from my_nlp_module.user_handler import TravelWith
 from my_nlp_module.user_preferences import UserPreferences
 from my_nlp_module.similarities_calculation import SentenceTransformerSimilarity
+from my_nlp_module import user_handler
 from sentence_transformers import SentenceTransformer
 import json
 
@@ -25,8 +27,8 @@ class MyFrame(customtkinter.CTkScrollableFrame):
         super().__init__(master, **kwargs)
 
         self.dir_path = ""
-        self.start_date = (2023, 1, 1, 0)
-        self.end_date = (2023, 1, 1, 0)
+        self.start_date = (2023, 1, 1, 8)  #TODO: hours to be updated from forms
+        self.end_date = (2023, 1, 1, 21)
         self.public_transport_accept = False
         self.bicycle_travel_accept = False
         self.car_travel_accept = False
@@ -104,7 +106,7 @@ class MyFrame(customtkinter.CTkScrollableFrame):
     def find_travel_plan(self):
         model = SentenceTransformer('all-MiniLM-L6-v2')
         templates = {}
-        with open("../json/templates.json") as f:
+        with open("./json/templates.json") as f:
             templates = json.load(f)
 
         calculations = SentenceTransformerSimilarity(model, [])
@@ -118,6 +120,7 @@ class MyFrame(customtkinter.CTkScrollableFrame):
                 inp = f.read()
             user.add_text(inp)
         user.calculate_preferences()
+        self.preferences = user.get_preferences()
         print(user.get_preferences())
         print(self.start_date)
         print(self.end_date)
@@ -125,6 +128,9 @@ class MyFrame(customtkinter.CTkScrollableFrame):
         print(self.bicycle_travel_accept)
         print(self.car_travel_accept)
         print(self.cost_rate)
+        print(self.city.get())
+        
+        self.planner = user_handler.User(self.preferences, self.city.get(), self.start_date, self.end_date, self.public_transport_accept, self.bicycle_travel_accept, self.car_travel_accept, self.cost_rate, self.travel_with)
 
 
     def get_directory(self):
@@ -136,7 +142,7 @@ class MyFrame(customtkinter.CTkScrollableFrame):
         date_split = self.start_calendar.get_date().split("/")
         day = int(date_split[0])
         month = int(date_split[1])
-        year = int(date_split[2])
+        year = int("20"+date_split[2])
         self.start_date = datetime(year, month, day, 0)
 
     def get_end_date(self):
@@ -144,7 +150,7 @@ class MyFrame(customtkinter.CTkScrollableFrame):
         date_split = self.end_calendar.get_date().split("/")
         day = int(date_split[0])
         month = int(date_split[1])
-        year = int(date_split[2])
+        year = int("20"+date_split[2])
         self.end_date = datetime(year, month, day, 0)
 
     def use_public_transport(self, option):

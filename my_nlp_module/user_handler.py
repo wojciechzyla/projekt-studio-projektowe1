@@ -94,6 +94,32 @@ class User:
         self.temporary_places_grouping()
         self.show_map_for_each_day()
         self.show_other_interesting_places()
+        
+    def get_days_number(self):
+        return len(self.available_days)
+    
+    def get_daily_places_list(self, i: int):
+        place_name_list = []
+        day : CityDay = self.available_days[i]
+        for pl in day.get_places_names_list():
+            place_name_list.append(str(pl))
+        return place_name_list
+    
+    def get_daily_url_link(self, i: int):
+        url :str =  self.available_days[i].get_googlemaps_link()
+        return url
+    
+    def get_daily_interactive_map(self, i: int):
+        layer = self.available_days[i].get_googlemaps_layer()
+        return layer
+    
+    def get_another_places_list(self):
+        substitutes_places_names = []
+        for pl in self.substitutes_places:
+            place :Place = pl
+            substitutes_places_names.append((place.get_place_name(), place.get_place_coordinates()))
+        return substitutes_places_names
+        
 
     def prepare_available_days(self):
         days_in_city = self.end_time.day - self.start_time.day + 1
@@ -358,7 +384,7 @@ class CityDay:
         places_num = len(self.places_list)
         if(places_num == 1):
             start_coordinates = (self.places_list[0].coordinates)
-            layer = gmaps.directions.Directions(center = city_coordinates)
+            self.layer = gmaps.directions.Directions(center = city_coordinates)
         elif(places_num > 1):
             waypoints = []
             start_coordinates = (self.places_list[0].coordinates)
@@ -366,11 +392,11 @@ class CityDay:
             for i, place in enumerate(self.places_list):
                 if 0 < i < places_num - 1:
                     waypoints.append(place.coordinates)
-            layer = gmaps.directions.Directions(start_coordinates, finish_coordinates, waypoints=waypoints,mode=transport_mode, center = city_coordinates, optimize_waypoints = True)
+            self.layer = gmaps.directions.Directions(start_coordinates, finish_coordinates, waypoints=waypoints,mode=transport_mode, center = city_coordinates, optimize_waypoints = True)
             
         if(places_num > 0):
             fig = gmaps.figure()
-            fig.add_layer(layer)
+            fig.add_layer(self.layer)
             display.display(fig)
             
             print("For this day we prepare for you such a places to see:")
@@ -419,11 +445,23 @@ class CityDay:
         else:
             int_url = "&" + origin + "&" + origin_place_id + "&" + destination + "&" + destination_place_id
             
-        url = base_url + int_url + "&" + travel_mode_part
-        print(url)
+        self.url = base_url + int_url + "&" + travel_mode_part
+        print(self.url)
     
+    def get_places_names_list(self):
+        places_name_list = []
+        for pl in self.places_list:
+            place: Place = pl
+            place_name = place.get_place_name()
+            places_name_list.append(str(place_name))
+        return places_name_list
+    
+    def get_googlemaps_link(self):
+        return self.url
         
-        
+    def get_googlemaps_layer(self):
+        return self.layer
+    
 class Place:
     def __init__(self, place_id, place_name):
         self.place_id = place_id
@@ -439,3 +477,9 @@ class Place:
         self.name = json_response['result']['name']
         coordinates = json_response['result']['geometry']['location']
         self.coordinates = (coordinates['lat'], coordinates['lng'])
+        
+    def get_place_name(self):
+        return str(self.place_name)
+    
+    def get_place_coordinates(self):
+        return str(self.coordinates)
