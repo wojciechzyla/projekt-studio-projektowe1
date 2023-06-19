@@ -15,7 +15,7 @@ gmaps_key = os.environ["GMAPS_API_KEY"]
 gmaps.configure(api_key=gmaps_key)
 
 cat_json = {}
-with open("..\json\categories.json") as f:
+with open(".\json\categories.json") as f:
     cat_json = json.load(f)
 
 class Category:
@@ -93,8 +93,8 @@ class User:
         self.set_num_of_places_for_each_day()
         self.temporary_places_grouping()
         self.show_map_for_each_day()
-        self.show_other_interesting_places()
-        
+        self.show_other_interesting_places()    
+
     def get_days_number(self):
         return len(self.available_days)
     
@@ -235,7 +235,7 @@ class User:
     def get_number_of_places_to_be_found(self):
         for num in self.num_of_places_for_main_categories:
             self.num_of_places_for_main_categories_for_search.append(math.ceil(1.8 * num))
-            
+    
     def prepare_city_coordinates(self):
         endpoint = 'https://maps.googleapis.com/maps/api/geocode/json'
         response = requests.get(endpoint, params={'address': self.destination, 'key': gmaps_key})

@@ -1,6 +1,5 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-import tkinter
 import customtkinter
 from tkinter import filedialog
 from tkcalendar import Calendar
@@ -17,6 +16,10 @@ from my_nlp_module.similarities_calculation import SentenceTransformerSimilarity
 from my_nlp_module import user_handler
 from sentence_transformers import SentenceTransformer
 import json
+import gmaps
+from IPython import display as dsp
+import tkinter as tk
+from PIL import ImageTk, Image
 
 customtkinter.set_appearance_mode("System")
 customtkinter.set_default_color_theme("blue")
@@ -47,7 +50,7 @@ class MyFrame(customtkinter.CTkScrollableFrame):
         # Destination
         self.destination_label = customtkinter.CTkLabel(self, text="Provide name of your destination:")
         self.destination_label.pack()
-        self.city = tkinter.StringVar()
+        self.city = tk.StringVar()
         self.destination_input = customtkinter.CTkEntry(self, placeholder_text="City name", textvariable=self.city)
         self.destination_input.pack()
 
@@ -131,7 +134,7 @@ class MyFrame(customtkinter.CTkScrollableFrame):
         print(self.city.get())
         
         self.planner = user_handler.User(self.preferences, self.city.get(), self.start_date, self.end_date, self.public_transport_accept, self.bicycle_travel_accept, self.car_travel_accept, self.cost_rate, self.travel_with)
-
+        self.create_result_window(self.planner)
 
     def get_directory(self):
         self.dir_path = filedialog.askdirectory()
@@ -143,7 +146,7 @@ class MyFrame(customtkinter.CTkScrollableFrame):
         day = int(date_split[0])
         month = int(date_split[1])
         year = int("20"+date_split[2])
-        self.start_date = datetime(year, month, day, 0)
+        self.start_date = datetime(year, month, day, 12)
 
     def get_end_date(self):
         self.end_date_label.configure(text=f"Selected end day: {self.end_calendar.get_date()}")
@@ -151,7 +154,7 @@ class MyFrame(customtkinter.CTkScrollableFrame):
         day = int(date_split[0])
         month = int(date_split[1])
         year = int("20"+date_split[2])
-        self.end_date = datetime(year, month, day, 0)
+        self.end_date = datetime(year, month, day, 20)
 
     def use_public_transport(self, option):
         if option == "Yes":
@@ -174,8 +177,91 @@ class MyFrame(customtkinter.CTkScrollableFrame):
     def set_cost_rate(self, value):
         self.cost_rate = round(float(value), 2)
         self.cost_rate_label.configure(text=f"Choose your cost rate: {self.cost_rate}")
+        
+    def create_result_window(self, planner: user_handler.User):
+        self.result_window = tk.Toplevel(self)
+        self.result_window.title("Travel Plan Result")
 
+        days_number = planner.get_days_number()
+        for i in range(days_number):
+            day_frame = tk.Frame(self.result_window)
+            day_frame.pack(padx=10, pady=10)
 
+            day_label = tk.Label(day_frame, text=f"Your plan for day {i+1}")
+            day_label.pack()
+
+            # Google maps view
+            layer = planner.get_daily_interactive_map(i)
+            fig = gmaps.figure()
+            fig.add_layer(layer)
+            image_file = "map_image.png"
+            gmaps.figure_to_file(fig, image_file)
+            image = ImageTk.PhotoImage(Image.open(image_file))
+            image_label = tk.Label(day_frame, image=image)
+            image_label.image = image  # Keep a reference to prevent garbage collection
+            image_label.pack()
+
+            url = planner.get_daily_url_link(i)
+            link_label = tk.Label(day_frame, text=f"Here is the link to Google Maps: {url}")
+            link_label.pack()
+
+            propose_label = tk.Label(day_frame, text="Proposed places for today:")
+            propose_label.pack()
+
+            daily_places = planner.get_daily_places_list(i)
+            for j, place in enumerate(daily_places):
+                place_label = tk.Label(day_frame, text=f"{j+1}. Place: {place}")
+                place_label.pack()
+
+        another_places = planner.get_another_places_list()
+        another_places_label = tk.Label(self.result_window, text="Here is a list of other places that may be interesting to you:")
+        another_places_label.pack()
+
+        for i, place in enumerate(another_places):
+            place_label = tk.Label(self.result_window, text=f"{i+1}. Place: {place}")
+            place_label.pack()
+        
+    # def create_result_window(self, planner : user_handler.User):
+    #     self.result_window = tkinter.Toplevel(self)
+    #     self.result_window.title("Travel Plan Result")
+        
+    #     days_number = planner.get_days_number()
+    #     for i in range (0, days_number):
+    #         self.day_text = tkinter.Text(f"Your plan for day {i+1}")
+    #         self.day_text.pack()
+            
+    #         #Google maps view
+    #         layer = planner.get_daily_interactive_map(i)
+    #         fig = gmaps.figure()
+    #         fig.add_layer(layer)
+    #         image_file = "map_image.png"
+    #         gmaps.figure_to_file(fig, image_file)
+    #         image = tkinter.ImageTk.PhotoImage(file=image_file)
+    #         image_label = tkinter.Label(self.result_window, image=image)
+    #         image_label.image = image  # Keep a reference to prevent garbage collection
+    #         image_label.pack()
+            
+    #         url = planner.get_daily_url_link(i)
+    #         self.link_text = tkinter.Text(f"Here is link to google maps: {url}")
+    #         self.link_text.pack()
+            
+    #         self.propose_text = tkinter.Text(f"Proposed places for today: ")
+    #         self.propose_text.pack()
+            
+    #         daily_places = planner.get_daily_places_list(i)
+    #         for j in range(0, len(daily_places)):
+    #             self.day_text = tkinter.Text(f"{j+1}. Place: {daily_places[j]}")
+    #             self.day_text.pack()
+        
+    #     another_places = planner.get_another_places_list()
+    #     self.another_places_text = tkinter.Text("Here is list of another places, which can be interesting for you:")
+    #     self.another_places_text.pack()
+        
+    #     for i in range (0, len(another_places)):
+    #         self.place_text = tkinter.Text(f"{j+1}. Place: {another_places[i]}")
+    #         self.place_text.pack()
+
+                
 
 class App(customtkinter.CTk):
     def __init__(self):
@@ -188,8 +274,6 @@ class App(customtkinter.CTk):
 
         self.my_frame = MyFrame(master=self, width=300, height=200, corner_radius=0, fg_color="transparent")
         self.my_frame.grid(row=0, column=0, sticky="nsew")
-
-
 
 app = App()
 app.mainloop()
