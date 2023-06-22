@@ -15,7 +15,7 @@ gmaps_key = os.environ["GMAPS_API_KEY"]
 gmaps.configure(api_key=gmaps_key)
 
 cat_json = {}
-with open(".\json\categories.json") as f:
+with open("..\json\categories.json") as f:
     cat_json = json.load(f)
 
 class Category:
@@ -76,6 +76,12 @@ class User:
         self.num_of_places_for_main_categories_for_search = []
         self.found_places_lists =[]
         self.substitutes_places = []
+        self.substitutes_places_names = []
+        #################
+        self.urls = []
+        self.layers = []
+        self.lists_of_places_for_each_day = []
+        ###############
         self.prepare_available_days()
         self.get_main_preferences()
         self.get_religion()
@@ -98,27 +104,21 @@ class User:
     def get_days_number(self):
         return len(self.available_days)
     
-    def get_daily_places_list(self, i: int):
-        place_name_list = []
-        day : CityDay = self.available_days[i]
-        for pl in day.get_places_names_list():
-            place_name_list.append(str(pl))
-        return place_name_list
+    def get_daily_places_list(self, i):
+        return self.lists_of_places_for_each_day[i]
     
     def get_daily_url_link(self, i: int):
-        url :str =  self.available_days[i].get_googlemaps_link()
-        return url
+        return self.urls[i]
     
     def get_daily_interactive_map(self, i: int):
-        layer = self.available_days[i].get_googlemaps_layer()
-        return layer
+        return self.layers[i]
     
     def get_another_places_list(self):
-        substitutes_places_names = []
-        for pl in self.substitutes_places:
-            place :Place = pl
-            substitutes_places_names.append((place.get_place_name(), place.get_place_coordinates()))
-        return substitutes_places_names
+        # substitutes_places_names = []
+        # for pl in self.substitutes_places:
+        #     place :Place = pl
+        #     substitutes_places_names.append((place.get_place_name(), place.get_place_coordinates()))
+        return self.substitutes_places_names
         
 
     def prepare_available_days(self):
@@ -129,7 +129,7 @@ class User:
         #Here we define time slots for city exploration taking into account user nightlife's preference
         if self.preferences["nightlife"] > 1.5 * prob_values_mean and self.preferences["nightlife"]>=prob_values_median:
             start_hour = 9
-            end_hour = 3
+            end_hour = 24
         elif self.preferences["nightlife"] <= 1.5 * prob_values_mean and self.preferences["nightlife"] >= prob_values_mean or self.preferences["nightlife"] > 1.5 * prob_values_mean and self.preferences["nightlife"]<prob_values_median:
             start_hour = 8
             end_hour = 24
@@ -292,7 +292,12 @@ class User:
             curr_cat_places_list_without_duplicates = []
             [curr_cat_places_list_without_duplicates.append(x) for x in curr_cat_places_list if x not in curr_cat_places_list_without_duplicates]
             self.found_places_lists.append(curr_cat_places_list_without_duplicates)
-            
+        
+        curr_found_places_list_without_duplicates = []
+        [curr_found_places_list_without_duplicates.append(x) for x in self.found_places_lists if x not in curr_found_places_list_without_duplicates]
+        
+        self.found_places_lists = curr_found_places_list_without_duplicates
+        
             #print(f"curr cat places list len {len(curr_cat_places_list)}")
             
             
@@ -300,10 +305,15 @@ class User:
     def reduce_places_number(self):
         for i in range(len(self.found_places_lists)):
             for j in range(len(self.found_places_lists[i]) - self.num_of_places_for_main_categories[i]):
-                el_to_drop_idx = random.randrange(len(self.found_places_lists[i]))
-                taken_place = self.found_places_lists[i][el_to_drop_idx]
-                self.substitutes_places.append(Place(taken_place["place_id"], taken_place["name"]))
-                self.found_places_lists[i].pop(el_to_drop_idx) 
+                if(len(self.found_places_lists[i])>1):
+                    el_to_drop_idx = random.randrange(len(self.found_places_lists[i]))
+                    taken_place = self.found_places_lists[i][el_to_drop_idx]
+                    pl = Place(taken_place["place_id"], taken_place["name"])
+                    self.substitutes_places.append(pl) 
+                    self.substitutes_places_names.append(taken_place["name"]) #get_place_name() get_place_coordinates()
+                    self.found_places_lists[i].pop(el_to_drop_idx) 
+                
+                
         temp = []
         for lst in self.found_places_lists:
             for el in lst:
@@ -331,9 +341,14 @@ class User:
     def temporary_places_grouping(self):
         for day in self.available_days:
             for i in range(day.num_places_to_see):
-                random_place = self.found_places_lists.pop(random.randrange(len(self.found_places_lists)))
-                day.add_place(random_place["place_id"], random_place["name"])
+                if(len(self.found_places_lists)>1):
+                    random_place = self.found_places_lists.pop(random.randrange(len(self.found_places_lists)))
+                    day.add_place((random_place["place_id"]), (random_place["name"]))
+                elif (len(self.found_places_lists)==1):
+                    day.add_place(((self.found_places_lists[0])["place_id"]), ((self.found_places_lists[0])["name"]))
+                    
             day.set_travel_mode(self.transport_mode)
+            self.lists_of_places_for_each_day.append(day.get_places_names_list())
             
     def prepare_transport_mode(self):
         if self.car_travel_accept:
@@ -347,20 +362,25 @@ class User:
             
     def show_map_for_each_day(self):
         for day in self.available_days:
-            day.prepare_maps_and_links(self.transport_mode, [self.lat, self.lng])
+            url, layer = day.prepare_maps_and_links(self.transport_mode, [self.lat, self.lng])
+            self.layers.append(layer) #get_googlemaps_layers
+            self.urls.append(url) #get_googlemaps_link
             
     def show_other_interesting_places(self):
         print('\n')
         print("Other places, which can be interesting for you:")
         for pl in self.substitutes_places:
             print(f"{pl.name}, współrzędne: {pl.coordinates}")
-                
+            
    
 class CityDay:
     def __init__(self, start_hour:int, end_hour:int):
         self.start_hour = start_hour
         self.end_hour = end_hour
         self.places_list = []
+        self.layer = None
+        self.url = None
+        self.places_names_list = []
     
     #To be changed
     def set_num_places_to_see(self, available_hours: int, num_of_places: int):
@@ -368,6 +388,7 @@ class CityDay:
         
     def add_place(self, place_id, place_name):
         self.places_list.append(Place(place_id, place_name))
+        
         
     def prepare_lists_places_places_ids(self):
         self.list_of_places = []
@@ -385,12 +406,16 @@ class CityDay:
         if(places_num == 1):
             start_coordinates = (self.places_list[0].coordinates)
             self.layer = gmaps.directions.Directions(center = city_coordinates)
-        elif(places_num > 1):
+        elif(places_num == 2):
+            start_coordinates = (self.places_list[0].coordinates)
+            finish_coordinates = (self.places_list[-1].coordinates)
+            self.layer = gmaps.directions.Directions(start_coordinates, finish_coordinates,mode=transport_mode, center = city_coordinates)
+        elif(places_num > 2):
             waypoints = []
             start_coordinates = (self.places_list[0].coordinates)
             finish_coordinates = (self.places_list[-1].coordinates)
             for i, place in enumerate(self.places_list):
-                if 0 < i < places_num - 1:
+                if 0 < i < places_num:
                     waypoints.append(place.coordinates)
             self.layer = gmaps.directions.Directions(start_coordinates, finish_coordinates, waypoints=waypoints,mode=transport_mode, center = city_coordinates, optimize_waypoints = True)
             
@@ -402,11 +427,14 @@ class CityDay:
             print("For this day we prepare for you such a places to see:")
             for pl in self.places_list:
                 print(pl.name)
+                self.places_names_list.append(pl.name)
             
             print("\n")
             print("Here is link to google maps for your daily trip:")
             self.prepare_lists_places_places_ids()
-            self.generate_google_maps_url(self.list_of_places, self.list_of_places_ids, self.travel_mode)
+            self.url = self.generate_google_maps_url(self.list_of_places, self.list_of_places_ids, self.travel_mode)
+            
+        return self.url, self.layer
     
     def generate_google_maps_url(self, places, places_ids, travel_mode):
         base_url = "https://www.google.com/maps/dir/?api=1"
@@ -447,14 +475,10 @@ class CityDay:
             
         self.url = base_url + int_url + "&" + travel_mode_part
         print(self.url)
+        return self.url
     
     def get_places_names_list(self):
-        places_name_list = []
-        for pl in self.places_list:
-            place: Place = pl
-            place_name = place.get_place_name()
-            places_name_list.append(str(place_name))
-        return places_name_list
+        return self.places_names_list
     
     def get_googlemaps_link(self):
         return self.url

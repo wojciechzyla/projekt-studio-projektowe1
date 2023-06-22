@@ -18,13 +18,18 @@ from sentence_transformers import SentenceTransformer
 import json
 import gmaps
 from IPython import display as dsp
-import tkinter as tk
+import tkinter 
 from PIL import ImageTk, Image
-from my_nlp_module import user_handler
+import webbrowser
+
+from ipykernel.kernelapp import IPKernelApp
+from IPython import display
 
 customtkinter.set_appearance_mode("System")
 customtkinter.set_default_color_theme("blue")
 
+global my_var
+my_links = []
 
 class MyFrame(customtkinter.CTkScrollableFrame):
     def __init__(self, master, **kwargs):
@@ -51,7 +56,7 @@ class MyFrame(customtkinter.CTkScrollableFrame):
         # Destination
         self.destination_label = customtkinter.CTkLabel(self, text="Provide name of your destination:")
         self.destination_label.pack()
-        self.city = tk.StringVar()
+        self.city = tkinter.StringVar()
         self.destination_input = customtkinter.CTkEntry(self, placeholder_text="City name", textvariable=self.city)
         self.destination_input.pack()
 
@@ -108,43 +113,6 @@ class MyFrame(customtkinter.CTkScrollableFrame):
         
         self.results = []
         
-        
-    def show_results(self):
-        days_number = self.planner.get_days_number()
-        for i in range (0, days_number):
-            day_text = customtkinter.CTkLabel(self, text = f"Your plan for day {i+1}:")
-            self.results.append(day_text)
-                
-            # layer = self.planner.get_daily_interactive_map(i)
-            # fig = gmaps.figure()
-            # fig.add_layer(layer)
-            # image_file = "map_image.png"
-            # gmaps.figure_to_file(fig, image_file)
-            # image = customtkinter.CTkImage(light_image=image_file)
-            # self.results.append(image)
-            
-            url = self.planner.get_daily_url_link(i)
-            link_text = customtkinter.CTkLabel(self, text = f"Here is link to google maps: {url}")
-            self.results.append(link_text)
-        
-            link_text = customtkinter.CTkLabel(self, text = f"Here are your places for today:")
-            self.results.append(link_text)
-            
-            daily_places = self.planner.get_daily_places_list()
-            day_text = customtkinter.CTkLabel(self, text = f"{daily_places}")
-            self.results.append(day_text)
-                
-        another_places = self.planner.get_another_places_list()
-        another_places_text = customtkinter.CTkLabel(self, text = "Here is list of another places, which can be interesting for you:")
-        self.results.append(another_places_text)
-            
-        for i in range (0, len(another_places)):
-            place_text = customtkinter.CTkLabel(self, text = f"{i+1}. Place: {another_places[i]}")
-            self.results.append(place_text)
-        
-        for i in range(len(self.results)):
-            self.results[i].pack()
-        
 
     def find_travel_plan(self):
         model = SentenceTransformer('all-MiniLM-L6-v2')
@@ -174,8 +142,12 @@ class MyFrame(customtkinter.CTkScrollableFrame):
         print(self.city.get())
         
         self.planner = user_handler.User(self.preferences, self.city.get(), self.start_date, self.end_date, self.public_transport_accept, self.bicycle_travel_accept, self.car_travel_accept, self.cost_rate, self.travel_with)
+        self.ready_label = customtkinter.CTkLabel(self, text="Your plan is ready!")
+        self.ready_label.pack()
+        
         self.show_results()
-
+    
+        
     def get_directory(self):
         self.dir_path = filedialog.askdirectory()
         self.chosen_dir.configure(text=f"Chosen folder: {self.dir_path}")
@@ -183,16 +155,16 @@ class MyFrame(customtkinter.CTkScrollableFrame):
     def get_start_date(self):
         self.start_date_label.configure(text=f"Selected start day: {self.start_calendar.get_date()}")
         date_split = self.start_calendar.get_date().split("/")
-        day = int(date_split[0])
-        month = int(date_split[1])
+        day = int(date_split[1])
+        month = int(date_split[0])
         year = int("20"+date_split[2])
-        self.start_date = datetime(year, month, day, 12)
+        self.start_date = datetime(year, month, day, 8)
 
     def get_end_date(self):
         self.end_date_label.configure(text=f"Selected end day: {self.end_calendar.get_date()}")
         date_split = self.end_calendar.get_date().split("/")
-        day = int(date_split[0])
-        month = int(date_split[1])
+        day = int(date_split[1])
+        month = int(date_split[0])
         year = int("20"+date_split[2])
         self.end_date = datetime(year, month, day, 20)
 
@@ -216,10 +188,68 @@ class MyFrame(customtkinter.CTkScrollableFrame):
 
     def set_cost_rate(self, value):
         self.cost_rate = round(float(value), 2)
-        self.cost_rate_label.configure(text=f"Choose your cost rate: {self.cost_rate}")
-    
-
+        self.cost_rate_label.configure(text=f"Choose your cost rate: {self.cost_rate}")   
+            
+    def show_results(self):
+        
+        output_file_path = "./output.txt"
+        with open(output_file_path, 'w') as f:
+            
+            days_number = self.planner.get_days_number()
+            for i in range (0, days_number):
+                day_text = customtkinter.CTkLabel(self, text = "----------------------------------")
+                f.write("----------------------------------\n")
+                self.results.append(day_text)
+                day_text = customtkinter.CTkLabel(self, text = f"Your plan for day {i+1}:")
+                f.write(f"Your plan for day {i+1}:\n")
+                self.results.append(day_text)
+                    
+                # layer = self.planner.get_daily_interactive_map(i)
+                # fig = gmaps.figure()
+                # fig.add_layer(layer)
+                # image_file = "map_image.png"
+                # gmaps.figure_to_file(fig, image_file)
+                # image = customtkinter.CTkImage(light_image=image_file)
+                # self.results.append(image)
                 
+                url = self.planner.get_daily_url_link(i)
+                link_text = customtkinter.CTkLabel(self, text = f"Here is link to google maps:")
+                f.write(f"Here is link to google maps:\n")
+                self.results.append(link_text)
+                
+                link_text = customtkinter.CTkLabel(self, text = f"{url}")
+                f.write(f"{url}\n")
+                self.results.append(link_text)
+                
+                my_links.append(link_text)## TEMPORARY
+            
+                daily_places = self.planner.get_daily_places_list(i)
+                for j in range(0, len(daily_places)):
+                    day_text = customtkinter.CTkLabel(self, text = f"{j+1}. Place: {daily_places[j]}")
+                    f.write(f"{j+1}. Place: {daily_places[j]}\n")
+                    self.results.append(day_text)
+            
+            day_text = customtkinter.CTkLabel(self, text = "--------------------------------------")
+            f.write("--------------------------------------\n")
+            self.results.append(day_text)
+            
+            another_places = self.planner.get_another_places_list()
+            another_places_text = customtkinter.CTkLabel(self, text = "Here is list of another places, which can be interesting for you:")
+            f.write("Here is list of another places, which can be interesting for you:\n")
+            self.results.append(another_places_text)
+                
+            for i in range (0, len(another_places)):
+                place_text = customtkinter.CTkLabel(self, text = f"{i+1}. Place: {another_places[i]}")
+                f.write(f"{i+1}. Place: {another_places[i]}\n")
+                self.results.append(place_text)
+                
+            day_text = customtkinter.CTkLabel(self, text = "-------------------------------------------------------------------------------------------------------")
+            f.write("-------------------------------------------------------------------------------------------------------\n")
+            self.results.append(day_text)
+            
+            for i in range(len(self.results)):
+                self.results[i].pack()
+           
 
 class App(customtkinter.CTk):
     def __init__(self):
@@ -232,6 +262,6 @@ class App(customtkinter.CTk):
 
         self.my_frame = MyFrame(master=self, width=300, height=200, corner_radius=0, fg_color="transparent")
         self.my_frame.grid(row=0, column=0, sticky="nsew")
-
+            
 app = App()
 app.mainloop()
